@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0c3b2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="description" content="Next Up — fair doubles scheduling for badminton clubs" />
+  <title>Next Up — Badminton Scheduler</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c3b2e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23d4ff4a'/%3E%3C/svg%3E" />
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="topbar">
+      <div class="brand-block">
+        <p class="brand">Next Up</p>
+        <p class="session-label" id="sessionLabel">Club session</p>
+      </div>
+      <button type="button" class="icon-btn" id="settingsBtn" aria-label="Session settings" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>
+        </svg>
+      </button>
+    </header>
+
+    <main class="main">
+      <section class="section courts-section" aria-labelledby="courtsHeading">
+        <div class="section-head">
+          <h2 id="courtsHeading">Courts</h2>
+          <p class="section-meta" id="courtsMeta">0 free · 0 playing</p>
+        </div>
+        <div class="court-grid" id="courtGrid"></div>
+      </section>
+
+      <section class="section players-section" aria-labelledby="playersHeading">
+        <div class="section-head">
+          <h2 id="playersHeading">Players</h2>
+          <p class="section-meta" id="playersMeta">0 present</p>
+        </div>
+
+        <form class="add-player" id="addPlayerForm" autocomplete="off">
+          <label class="sr-only" for="playerName">Player name</label>
+          <input
+            id="playerName"
+            name="playerName"
+            type="text"
+            maxlength="32"
+            placeholder="Add someone who arrived…"
+            enterkeyhint="done"
+            required
+          />
+          <button type="submit" class="add-btn" aria-label="Add player">Add</button>
+        </form>
+
+        <ul class="player-list" id="playerList" aria-live="polite"></ul>
+        <p class="empty-hint" id="playersEmpty">No one here yet. Add the first arrival above.</p>
+      </section>
+
+      <section class="section games-section" aria-labelledby="gamesHeading">
+        <div class="section-head">
+          <h2 id="gamesHeading">In play</h2>
+          <p class="section-meta" id="gamesMeta">No matches yet</p>
+        </div>
+        <div class="game-list" id="gameList"></div>
+        <p class="empty-hint" id="gamesEmpty">Free a court and start a doubles match when four people are waiting.</p>
+      </section>
+    </main>
+
+    <div class="fab-dock" id="fabDock">
+      <button type="button" class="primary-cta" id="startMatchBtn" disabled>
+        <span class="cta-label">Start next doubles</span>
+        <span class="cta-sub" id="startMatchHint">Need 4 waiting + a free court</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Settings sheet -->
+  <dialog class="sheet" id="settingsSheet">
+    <form method="dialog" class="sheet-inner" id="settingsForm">
+      <header class="sheet-head">
+        <h2>Session</h2>
+        <button type="submit" class="icon-btn" value="cancel" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </header>
+
+      <label class="field">
+        <span>Session name</span>
+        <input type="text" id="sessionNameInput" maxlength="40" placeholder="Tuesday club" />
+      </label>
+
+      <label class="field">
+        <span>Courts available</span>
+        <div class="stepper">
+          <button type="button" class="stepper-btn" id="courtMinus" aria-label="Fewer courts">−</button>
+          <output id="courtCountOutput" for="courtCount">3</output>
+          <button type="button" class="stepper-btn" id="courtPlus" aria-label="More courts">+</button>
+        </div>
+        <input type="hidden" id="courtCount" value="3" />
+      </label>
+
+      <label class="field">
+        <span>Typical game length</span>
+        <select id="gameMinutes">
+          <option value="15">15 minutes</option>
+          <option value="20" selected>20 minutes</option>
+          <option value="25">25 minutes</option>
+          <option value="30">30 minutes</option>
+        </select>
+        <small>Used to estimate when a court frees up.</small>
+      </label>
+
+      <div class="sheet-actions">
+        <button type="button" class="ghost-btn danger" id="resetSessionBtn">Reset session</button>
+        <button type="submit" class="primary-btn" value="save" id="saveSettingsBtn">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Match preview sheet -->
+  <dialog class="sheet" id="matchSheet">
+    <div class="sheet-inner">
+      <header class="sheet-head">
+        <h2>Next doubles</h2>
+        <button type="button" class="icon-btn" id="closeMatchSheet" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18"/>
+          </svg>
+        </button>
+      </header>
+      <p class="match-intro" id="matchIntro">Fair mix based on games played and who has already partnered.</p>
+      <div class="match-preview" id="matchPreview"></div>
+      <label class="field">
+        <span>Court</span>
+        <select id="matchCourtSelect"></select>
+      </label>
+      <div class="sheet-actions">
+        <button type="button" class="ghost-btn" id="reshuffleBtn">Reshuffle</button>
+        <button type="button" class="primary-btn" id="confirmMatchBtn">Start on court</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
