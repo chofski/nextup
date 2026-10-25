@@ -4,10 +4,11 @@
   "description": "Fair badminton doubles scheduling for club sessions",
   "start_url": "./index.html",
   "scope": "./",
+  "id": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#e7f1ea",
-  "theme_color": "#0c3b2e",
+  "theme_color": "#e7f1ea",
   "lang": "en",
   "icons": [
     {
