@@ -494,20 +494,15 @@ body::before {
 }
 
 .fab-dock {
+  /* left + translateX is the reliable Safari centering for fixed bars */
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
   bottom: 0;
-  width: 100%;
+  transform: translateX(-50%);
+  width: min(430px, 100%);
+  max-width: 100%;
   box-sizing: border-box;
-  display: flex;
-  justify-content: center;
-  align-items: stretch;
-  padding:
-    0.85rem
-    max(1rem, env(safe-area-inset-right, 0px))
-    calc(1rem + var(--safe-bottom))
-    max(1rem, env(safe-area-inset-left, 0px));
+  padding: 0.85rem 1rem calc(1rem + var(--safe-bottom));
   background:
     linear-gradient(to top, rgba(231, 241, 234, 1) 55%, rgba(231, 241, 234, 0.92) 78%, transparent);
   z-index: 30;
@@ -521,9 +516,7 @@ body::before {
 .primary-cta {
   -webkit-appearance: none;
   appearance: none;
-  /* Match the centered .app column so the dock doesn't drift on Safari */
-  width: min(100%, 398px); /* 430px app - 2rem padding */
-  max-width: 100%;
+  width: 100%;
   margin: 0;
   box-sizing: border-box;
   border: 2px solid rgba(16, 35, 28, 0.12);
@@ -542,8 +535,8 @@ body::before {
   justify-content: center;
   gap: 0.15rem;
   text-align: center;
-  animation: dock-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-  transition: transform 0.2s ease, opacity 0.2s ease, background 0.25s ease, box-shadow 0.25s ease, filter 0.2s ease;
+  animation: cta-fade 0.45s ease both;
+  transition: filter 0.2s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
 
 .primary-cta:disabled {
@@ -561,7 +554,6 @@ body::before {
 }
 
 .primary-cta:not(:disabled):active {
-  transform: scale(0.985);
   filter: brightness(0.97);
 }
 
@@ -954,15 +946,9 @@ body::before {
   }
 }
 
-@keyframes dock-rise {
-  from {
-    opacity: 0;
-    translate: 0 14px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
+@keyframes cta-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slide-in {
@@ -1013,12 +999,8 @@ body::before {
   }
 
   .fab-dock {
-    width: 100%;
-    padding-inline: max(1.25rem, env(safe-area-inset-left, 0px)) max(1.25rem, env(safe-area-inset-right, 0px));
-  }
-
-  .primary-cta {
-    width: min(100%, 688px); /* 720px app - 2rem padding */
+    width: min(720px, 100%);
+    padding-inline: 1.25rem;
   }
 
   .cta-sub {
