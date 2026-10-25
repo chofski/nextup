@@ -494,19 +494,18 @@ body::before {
 }
 
 .fab-dock {
+  /* left + translateX is the reliable Safari centering for fixed bars */
   position: fixed;
-  left: 0;
-  right: 0;
+  left: 50%;
   bottom: 0;
-  margin-inline: auto;
-  width: min(100% - 0rem, 430px);
+  transform: translateX(-50%);
+  width: min(430px, 100%);
   max-width: 100%;
   box-sizing: border-box;
   padding: 0.85rem 1rem calc(1rem + var(--safe-bottom));
   background:
     linear-gradient(to top, rgba(231, 241, 234, 1) 55%, rgba(231, 241, 234, 0.92) 78%, transparent);
   z-index: 30;
-  animation: dock-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
   pointer-events: none;
 }
 
@@ -518,6 +517,7 @@ body::before {
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
+  margin: 0;
   box-sizing: border-box;
   border: 2px solid rgba(16, 35, 28, 0.12);
   border-radius: 18px;
@@ -535,7 +535,8 @@ body::before {
   justify-content: center;
   gap: 0.15rem;
   text-align: center;
-  transition: transform 0.2s ease, opacity 0.2s ease, background 0.25s ease, box-shadow 0.25s ease, filter 0.2s ease;
+  animation: cta-fade 0.45s ease both;
+  transition: filter 0.2s ease, background 0.25s ease, box-shadow 0.25s ease;
 }
 
 .primary-cta:disabled {
@@ -553,7 +554,6 @@ body::before {
 }
 
 .primary-cta:not(:disabled):active {
-  transform: scale(0.985);
   filter: brightness(0.97);
 }
 
@@ -909,13 +909,11 @@ body::before {
 
 .toast {
   position: fixed;
-  left: 0;
-  right: 0;
-  margin-inline: auto;
+  left: 50%;
   bottom: calc(var(--dock-h) + var(--safe-bottom) + 0.35rem);
   width: max-content;
   max-width: min(90vw, 360px);
-  transform: translateY(12px);
+  transform: translate(-50%, 12px);
   z-index: 40;
   padding: 0.7rem 1rem;
   border-radius: 999px;
@@ -932,7 +930,7 @@ body::before {
 
 .toast.show {
   opacity: 1;
-  transform: translateY(0);
+  transform: translate(-50%, 0);
 }
 
 @keyframes rise {
@@ -946,15 +944,9 @@ body::before {
   }
 }
 
-@keyframes dock-rise {
-  from {
-    opacity: 0;
-    translate: 0 14px;
-  }
-  to {
-    opacity: 1;
-    translate: 0 0;
-  }
+@keyframes cta-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slide-in {
@@ -1005,13 +997,8 @@ body::before {
   }
 
   .fab-dock {
-    width: min(100%, 720px);
+    width: min(720px, 100%);
     padding-inline: 1.25rem;
-  }
-
-  .primary-cta {
-    max-width: 28rem;
-    margin-inline: auto;
   }
 
   .cta-sub {
