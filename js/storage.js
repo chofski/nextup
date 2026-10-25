@@ -2,8 +2,8 @@ const STORAGE_KEY = 'nextup.badminton.v1';
 
 const defaultState = () => ({
   sessionName: 'Club session',
-  courtCount: 3,
-  gameMinutes: 20,
+  courtCount: 2,
+  gameMinutes: 15,
   preferMixed: true,
   players: [],
   courts: [],

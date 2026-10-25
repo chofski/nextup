@@ -587,7 +587,7 @@ function openSettings() {
   els.sessionNameInput.value = state.sessionName || '';
   els.courtCount.value = String(state.courtCount);
   els.courtCountOutput.textContent = String(state.courtCount);
-  els.gameMinutes.value = String(state.gameMinutes || 20);
+  els.gameMinutes.value = String(state.gameMinutes || 15);
   els.preferMixed.checked = state.preferMixed !== false;
   els.settingsSheet.showModal();
 }
@@ -671,7 +671,7 @@ els.settingsForm.addEventListener('submit', (e) => {
 
   e.preventDefault();
   state.sessionName = els.sessionNameInput.value.trim() || 'Club session';
-  state.gameMinutes = Number(els.gameMinutes.value) || 20;
+  state.gameMinutes = Number(els.gameMinutes.value) || 15;
   state.preferMixed = !!els.preferMixed.checked;
   const ok = applyCourtCount(Number(els.courtCount.value));
   if (!ok) return;
