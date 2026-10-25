@@ -8,6 +8,7 @@ const files = [
   'index.html',
   'manifest.webmanifest',
   'sw.js',
+  'css/fonts.css',
   'css/styles.css',
   'js/app.js',
   'js/scheduler.js',
@@ -16,6 +17,13 @@ const files = [
   'assets/icons/icon-192.png',
   'assets/icons/icon-512.png',
   'assets/icons/apple-touch-icon.png',
+  'assets/fonts/figtree-latin-400-normal.woff2',
+  'assets/fonts/figtree-latin-500-normal.woff2',
+  'assets/fonts/figtree-latin-600-normal.woff2',
+  'assets/fonts/figtree-latin-700-normal.woff2',
+  'assets/fonts/syne-latin-600-normal.woff2',
+  'assets/fonts/syne-latin-700-normal.woff2',
+  'assets/fonts/syne-latin-800-normal.woff2',
 ];
 
 rmSync(www, { recursive: true, force: true });

@@ -7,9 +7,9 @@ For a native App Store / TestFlight shell, this repo includes **Capacitor** scaf
 ## Option A — Home screen (PWA, no Mac required)
 
 1. Serve the site over HTTPS (or `localhost` while developing).
-2. Open it in Safari on iPhone.
+2. Open it in Safari on iPhone **once while online** so the service worker can cache the app shell and self-hosted fonts.
 3. Share → **Add to Home Screen**.
-4. Launch from the icon — it runs fullscreen with local persistence.
+4. Launch from the icon — it runs fullscreen with local persistence, including offline after that first cache.
 
 ## Option B — Native iOS app (Capacitor)
 
