@@ -59,48 +59,16 @@
             enterkeyhint="done"
             required
           />
-
-          <fieldset class="gender-picker" id="genderToggle">
-            <legend>Playing as</legend>
-            <div class="gender-picker-options">
-              <label class="gender-card male">
-                <input type="radio" name="playerGender" value="male" checked />
-                <span class="gender-card-face">
-                  <span class="gender-card-icon" aria-hidden="true">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="10" cy="14" r="5"/>
-                      <path d="M14.5 9.5L20 4M15 4h5v5"/>
-                    </svg>
-                  </span>
-                  <span class="gender-card-text">
-                    <strong>Male</strong>
-                    <small>Men’s / mixed</small>
-                  </span>
-                </span>
-              </label>
-              <label class="gender-card female">
-                <input type="radio" name="playerGender" value="female" />
-                <span class="gender-card-face">
-                  <span class="gender-card-icon" aria-hidden="true">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                      <circle cx="12" cy="9" r="5"/>
-                      <path d="M12 14v7M9 18h6"/>
-                    </svg>
-                  </span>
-                  <span class="gender-card-text">
-                    <strong>Female</strong>
-                    <small>Women’s / mixed</small>
-                  </span>
-                </span>
-              </label>
-            </div>
-          </fieldset>
-
-          <button type="submit" class="add-btn" aria-label="Add player">Add player</button>
+          <label class="sr-only" for="playerGender">Gender</label>
+          <select id="playerGender" name="playerGender" aria-label="Gender">
+            <option value="male" selected>Male</option>
+            <option value="female">Female</option>
+          </select>
+          <button type="submit" class="add-btn" aria-label="Add player">Add</button>
         </form>
 
         <ul class="player-list" id="playerList" aria-live="polite"></ul>
-        <p class="empty-hint" id="playersEmpty">No one here yet. Add arrivals above and choose Male or Female.</p>
+        <p class="empty-hint" id="playersEmpty">No one here yet. Add an arrival and choose Male or Female from the list.</p>
       </section>
 
       <section class="section games-section" aria-labelledby="gamesHeading">

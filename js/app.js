@@ -97,8 +97,8 @@ function playerById(id) {
 }
 
 function selectedGender() {
-  const picked = els.addPlayerForm.querySelector('input[name="playerGender"]:checked');
-  return picked?.value === 'female' ? 'female' : 'male';
+  const select = document.getElementById('playerGender');
+  return select?.value === 'female' ? 'female' : 'male';
 }
 
 function genderShort(gender) {
@@ -125,19 +125,18 @@ function updateStartButton() {
   els.startMatchBtn.disabled = !ok;
 
   if (ok) {
-    const kinds = avail.types.map(matchTypeLabel).join(' · ');
-    els.startMatchHint.textContent = `${avail.male}M · ${avail.female}F waiting · ${free} free · ${kinds}`;
+    els.startMatchHint.textContent = `${avail.male}M · ${avail.female}F waiting · ${free} court${free === 1 ? '' : 's'} free`;
     return;
   }
 
   if (free < 1 && avail.types.length === 0) {
-    els.startMatchHint.textContent = 'Need a valid lineup + a free court';
+    els.startMatchHint.textContent = 'Need a valid lineup and a free court';
   } else if (free < 1) {
-    els.startMatchHint.textContent = 'All courts are busy — end a match first';
+    els.startMatchHint.textContent = 'All courts busy — end a match first';
   } else if (avail.male + avail.female < 4) {
     els.startMatchHint.textContent = `Need more players (${avail.male}M · ${avail.female}F)`;
   } else {
-    els.startMatchHint.textContent = `Need 2M+2F, 4M, or 4F (now ${avail.male}M · ${avail.female}F)`;
+    els.startMatchHint.textContent = `Need 2M+2F, 4M, or 4F`;
   }
 }
 
