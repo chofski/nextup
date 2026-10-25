@@ -242,6 +242,74 @@ export function suggestDoubles(waitingPlayers, pairHistory = {}, options = {}) {
   return ranked[index] || null;
 }
 
+/**
+ * Build a match from exactly four manually chosen waiting players.
+ * @param {object[]} selectedPlayers
+ * @param {object} pairHistory
+ * @param {number} [teamingNonce] cycle alternate valid teamings
+ * @returns {object|null}
+ */
+export function buildMatchFromSelection(selectedPlayers, pairHistory = {}, teamingNonce = 0) {
+  if (!selectedPlayers || selectedPlayers.length !== 4) return null;
+  const players = selectedPlayers.filter((p) => p && normalizeGender(p.gender));
+  if (players.length !== 4) return null;
+
+  const { male, female } = byGender(players);
+  let options = [];
+
+  if (male.length === 2 && female.length === 2) {
+    const [m1, m2] = male;
+    const [f1, f2] = female;
+    options = [
+      { matchType: 'mixed', teamA: [m1, f1], teamB: [m2, f2] },
+      { matchType: 'mixed', teamA: [m1, f2], teamB: [m2, f1] },
+    ];
+  } else if (male.length === 4) {
+    const [a, b, c, d] = male;
+    options = [
+      { matchType: 'mens', teamA: [a, b], teamB: [c, d] },
+      { matchType: 'mens', teamA: [a, c], teamB: [b, d] },
+      { matchType: 'mens', teamA: [a, d], teamB: [b, c] },
+    ];
+  } else if (female.length === 4) {
+    const [a, b, c, d] = female;
+    options = [
+      { matchType: 'womens', teamA: [a, b], teamB: [c, d] },
+      { matchType: 'womens', teamA: [a, c], teamB: [b, d] },
+      { matchType: 'womens', teamA: [a, d], teamB: [b, c] },
+    ];
+  } else {
+    return null;
+  }
+
+  const scored = options
+    .map((opt) => ({
+      ...opt,
+      mix: scoreTeaming(opt, pairHistory),
+      label: matchTypeLabel(opt.matchType),
+      playerIds: [...opt.teamA, ...opt.teamB].map((p) => p.id),
+      manual: true,
+    }))
+    .sort((a, b) => a.mix - b.mix);
+
+  const index = Math.min(teamingNonce % scored.length, scored.length - 1);
+  const chosen = scored[index];
+  return {
+    matchType: chosen.matchType,
+    teamA: chosen.teamA,
+    teamB: chosen.teamB,
+    playerIds: chosen.playerIds,
+    score: chosen.mix,
+    mix: chosen.mix,
+    label: chosen.label,
+    manual: true,
+  };
+}
+
+export function selectionIsValid(selectedPlayers) {
+  return !!buildMatchFromSelection(selectedPlayers, {}, 0);
+}
+
 export function recordPartnerships(pairHistory, teamAIds, teamBIds) {
   const next = { ...pairHistory };
   const bump = (a, b) => {
