@@ -32,7 +32,8 @@ npm test
 
 ## iPhone / installable app
 
-- **PWA:** Safari → Share → Add to Home Screen (works with the included manifest + service worker).
-- Offline: after one online open, relaunches work without network (cache-first app shell + self-hosted fonts).
-- Fonts (Figtree / Syne) are self-hosted under `assets/fonts/` and cached offline — no Google Fonts request after the first load.
+- **PWA:** Safari → Share → Add to Home Screen (manifest + service worker).
+- **Offline requires HTTPS** (GitHub Pages is fine). Opening the Mac dev server as `http://192.168…` on a phone cannot cache for offline — use the Pages URL, or localhost on the same device.
+- After one online open (allow the one-time reload), Home Screen relaunches work without network.
+- Fonts (Figtree / Syne) are self-hosted under `assets/fonts/` and cached offline.
 - **Native shell:** Capacitor scaffolding is included — see [docs/IOS.md](docs/IOS.md).

@@ -6,15 +6,22 @@ For a native App Store / TestFlight shell, this repo includes **Capacitor** scaf
 
 ## Option A — Home screen (PWA, no Mac required)
 
-1. Serve the site over HTTPS (or `localhost` while developing).
-2. Open it in Safari on iPhone **once while online** and wait a second so the service worker can cache the app shell and fonts.
+Offline Home Screen **requires a secure context**:
+- ✅ `https://…` (GitHub Pages, etc.)
+- ✅ `http://localhost` / `http://127.0.0.1` **on the same device**
+- ❌ `http://192.168.…` from an iPhone to your Mac — Safari will **not** install a service worker, so killing the server always yields a blank/black app
+
+### Recommended flow (GitHub Pages or any HTTPS URL)
+
+1. Open the site in Safari on iPhone while online.
+2. Wait for the page to reload once (the app does this after the service worker installs).
 3. Share → **Add to Home Screen**.
-4. Launch from the icon — it runs fullscreen with local persistence.
-5. After that first online open, cold starts work **offline** (cache-first shell). If you redeploy the app, open it online once again so the new cache can install.
+4. Launch from the icon; you can now go offline / kill the server and reopen.
 
 ### Offline troubleshooting
-- Delete the Home Screen icon and re-add after a fresh online visit if an old install was created before offline support.
-- In iOS Settings → Safari → Advanced → Website Data, you can remove the site and retry the online visit + Add to Home Screen flow.
+- If you previously added the icon from an `http://192.168…` URL, delete that icon and re-add from HTTPS.
+- After a redeploy, open once online so cache `nextup-v4` can install.
+- iOS Settings → Safari → Advanced → Website Data can clear a stuck site copy.
 
 ## Option B — Native iOS app (Capacitor)
 

@@ -13,6 +13,7 @@ const files = [
   'js/app.js',
   'js/scheduler.js',
   'js/storage.js',
+  'js/offline.js',
   'assets/icons/icon.svg',
   'assets/icons/icon-192.png',
   'assets/icons/icon-512.png',

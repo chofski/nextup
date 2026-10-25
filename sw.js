@@ -1,7 +1,6 @@
-/* Next Up — offline-first service worker for Home Screen / GitHub Pages */
-const CACHE = 'nextup-v3';
+/* Next Up — offline-first SW (Home Screen / GitHub Pages HTTPS) */
+const CACHE = 'nextup-v4';
 
-/** Paths relative to the SW scope (works in a site subfolder). */
 const SHELL = [
   'index.html',
   'css/fonts.css',
@@ -9,6 +8,7 @@ const SHELL = [
   'js/app.js',
   'js/scheduler.js',
   'js/storage.js',
+  'js/offline.js',
   'manifest.webmanifest',
   'assets/icons/icon-192.png',
   'assets/icons/icon-512.png',
@@ -27,34 +27,25 @@ function toUrl(path) {
   return new URL(path, self.registration.scope).href;
 }
 
+async function putIndexAliases(cache, indexResponse) {
+  if (!indexResponse) return;
+  const targets = [toUrl('index.html'), toUrl('./'), toUrl(''), self.registration.scope];
+  await Promise.all(targets.map((u) => cache.put(u, indexResponse.clone())));
+}
+
 async function precache() {
   const cache = await caches.open(CACHE);
-  const urls = SHELL.map(toUrl);
-
-  // Prefer addAll, but fall back per-file so one failure doesn't abort install
-  try {
-    await cache.addAll(urls);
-  } catch {
-    await Promise.all(
-      urls.map(async (url) => {
-        try {
-          const res = await fetch(url, { cache: 'reload' });
-          if (res.ok) await cache.put(url, res);
-        } catch {
-          /* ignore individual failures during install */
-        }
-      })
-    );
+  for (const path of SHELL) {
+    const url = toUrl(path);
+    try {
+      const res = await fetch(url, { cache: 'reload' });
+      if (res.ok) await cache.put(url, res);
+    } catch {
+      /* continue — don't fail the whole install */
+    }
   }
-
-  // Same shell under common launch URLs (/, ./, index.html)
-  const index =
-    (await cache.match(toUrl('index.html'))) ||
-    (await cache.match(toUrl('./index.html')));
-  if (index) {
-    const clones = [toUrl(''), toUrl('./'), toUrl('index.html')];
-    await Promise.all(clones.map((u) => cache.put(u, index.clone())));
-  }
+  const index = await cache.match(toUrl('index.html'));
+  await putIndexAliases(cache, index);
 }
 
 async function cachedShell() {
@@ -62,34 +53,33 @@ async function cachedShell() {
   return (
     (await cache.match(toUrl('index.html'), { ignoreSearch: true })) ||
     (await cache.match(toUrl('./'), { ignoreSearch: true })) ||
-    (await cache.match(toUrl(''), { ignoreSearch: true }))
+    (await cache.match(self.registration.scope, { ignoreSearch: true }))
   );
 }
 
 async function matchAsset(request) {
   const cache = await caches.open(CACHE);
-  const direct = await cache.match(request, { ignoreSearch: true });
-  if (direct) return direct;
+  const hit = await cache.match(request, { ignoreSearch: true });
+  if (hit) return hit;
 
-  // Try scope-relative pathname (helps when request URL differs slightly)
   try {
     const url = new URL(request.url);
     const scope = new URL(self.registration.scope);
-    if (url.origin === scope.origin && url.pathname.startsWith(scope.pathname)) {
-      const rel = url.pathname.slice(scope.pathname.length).replace(/^\//, '') || 'index.html';
-      const byRel = await cache.match(toUrl(rel), { ignoreSearch: true });
-      if (byRel) return byRel;
-    }
+    if (url.origin !== scope.origin) return undefined;
+    if (!url.pathname.startsWith(scope.pathname)) return undefined;
+    let rel = url.pathname.slice(scope.pathname.length);
+    if (rel.startsWith('/')) rel = rel.slice(1);
+    if (!rel || rel.endsWith('/')) rel = `${rel}index.html`.replace(/^\//, '');
+    return cache.match(toUrl(rel), { ignoreSearch: true });
   } catch {
-    /* ignore */
+    return undefined;
   }
-  return undefined;
 }
 
 function isNavigation(request) {
   if (request.mode === 'navigate') return true;
   const accept = request.headers.get('accept') || '';
-  return accept.includes('text/html');
+  return request.destination === 'document' || accept.includes('text/html');
 }
 
 self.addEventListener('install', (event) => {
@@ -106,6 +96,12 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'WARM_CACHE') {
+    event.waitUntil(precache());
+  }
+});
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   if (request.method !== 'GET') return;
@@ -116,52 +112,38 @@ self.addEventListener('fetch', (event) => {
   } catch {
     return;
   }
-
-  // Only handle same-origin app traffic (fonts are self-hosted)
   if (url.origin !== self.location.origin) return;
 
   event.respondWith(
     (async () => {
-      // App shell: always prefer cache so Home Screen cold-starts work offline
       if (isNavigation(request)) {
+        // Never wait on the network for navigations — offline cold start must be instant
         const shell = (await matchAsset(request)) || (await cachedShell());
-        if (shell) {
-          // Refresh in background when online; ignore failures offline
-          event.waitUntil(
-            fetch(request)
-              .then(async (res) => {
-                if (!res || !res.ok) return;
-                const cache = await caches.open(CACHE);
-                await cache.put(request, res.clone());
-                await cache.put(toUrl('index.html'), res.clone());
-              })
-              .catch(() => {})
-          );
-          return shell;
-        }
+        if (shell) return shell;
+
         try {
-          return await fetch(request);
+          const fresh = await fetch(request);
+          if (fresh && fresh.ok) {
+            const cache = await caches.open(CACHE);
+            await cache.put(request, fresh.clone());
+            await putIndexAliases(cache, fresh.clone());
+          }
+          return fresh;
         } catch {
           return new Response(
-            '<!doctype html><meta charset="utf-8"><title>Next Up</title><body style="font-family:system-ui;padding:2rem;background:#e7f1ea;color:#10231c"><h1>Next Up</h1><p>Open this app once while online so it can finish downloading for offline use.</p></body>',
+            `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Next Up</title>
+<style>body{margin:0;min-height:100vh;font-family:system-ui;background:#e7f1ea;color:#10231c;padding:2rem;line-height:1.4}</style>
+<h1>Next Up</h1>
+<p>This install has no offline copy yet.</p>
+<p>Open the site once over <strong>HTTPS</strong> (or localhost on this device), wait a moment, reload, then Add to Home Screen again.</p>
+<p>Phone + <code>http://192.168…</code> cannot install a service worker, so offline Home Screen will stay blank.</p>`,
             { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
           );
         }
       }
 
       const cached = await matchAsset(request);
-      if (cached) {
-        event.waitUntil(
-          fetch(request)
-            .then(async (res) => {
-              if (!res || !res.ok) return;
-              const cache = await caches.open(CACHE);
-              await cache.put(request, res.clone());
-            })
-            .catch(() => {})
-        );
-        return cached;
-      }
+      if (cached) return cached;
 
       try {
         const fresh = await fetch(request);
