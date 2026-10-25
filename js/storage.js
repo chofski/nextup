@@ -4,6 +4,7 @@ const defaultState = () => ({
   sessionName: 'Club session',
   courtCount: 3,
   gameMinutes: 20,
+  preferMixed: true,
   players: [],
   courts: [],
   games: [],
@@ -63,16 +64,18 @@ function hydrateCourts(state) {
     }
   }
 
-  // Players on missing games become waiting
+  // Players on missing games become waiting; normalize gender
   const activePlayerIds = new Set(games.flatMap((g) => g.playerIds));
   const players = (state.players || []).map((p) => ({
     ...p,
+    gender: p.gender === 'female' || p.gender === 'male' ? p.gender : 'male',
     status: activePlayerIds.has(p.id) ? 'playing' : 'waiting',
   }));
 
   return {
     ...state,
     courtCount: count,
+    preferMixed: state.preferMixed !== false,
     courts,
     games,
     players,

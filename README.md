@@ -6,11 +6,14 @@ Open `index.html` in a browser (or serve the folder statically). Session data is
 
 ## How it works
 
-1. Set courts and typical game length in **Session** (gear icon).
-2. Add people as they arrive.
-3. Tap **Start next doubles** (or a free court) when four or more players are waiting.
-4. Confirm the suggested lineup — the mixer prefers people with fewer games and fewer recent partnerships. Use **Reshuffle** for an alternate fair lineup.
-5. When a game finishes, tap **Court free — end match**. Those four return to waiting with their game counts updated, and the next mix stays balanced across the session.
+1. Set courts and typical game length in **Session** (gear icon). Optionally prefer mixed doubles when both genders are waiting.
+2. Add people as they arrive, marking each as **M** or **F**. Tap a player’s M/F badge later to correct it.
+3. Tap **Start next doubles** when a valid lineup is possible:
+   - **Mixed** — 2 male + 2 female (each side is one M + one F)
+   - **Men's** — 4 male
+   - **Women's** — 4 female
+4. Pick the match type (or leave on Auto), confirm the lineup, and use **Reshuffle** for an alternate fair mix.
+5. When a game finishes, tap **Court free — end match**. Those four return to waiting with updated game counts.
 
 ## Local development
 
