@@ -245,25 +245,45 @@ body::before {
 
 .add-player {
   display: grid;
-  gap: 0.65rem;
-  margin-bottom: 0.9rem;
+  grid-template-columns: minmax(0, 1fr) 6.75rem auto;
+  gap: 0.45rem;
+  margin-bottom: 0.85rem;
+  align-items: stretch;
 }
 
 .add-player input[type="text"],
+.add-player select,
 .field input[type="text"],
 .field input:not([type="checkbox"]),
 .field select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 14px;
-  padding: 0.85rem 0.95rem;
+  padding: 0.8rem 0.85rem;
   font: inherit;
   font-size: 1rem;
   background: var(--surface-strong);
   color: var(--ink);
+  min-width: 0;
+}
+
+.add-player select {
+  padding-right: 1.6rem;
+  font-weight: 600;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted) 50%),
+    linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) calc(50% - 2px),
+    calc(100% - 9px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
 }
 
 .add-player input[type="text"]:focus,
+.add-player select:focus,
 .field input[type="text"]:focus,
 .field input:not([type="checkbox"]):focus,
 .field select:focus {
@@ -272,128 +292,18 @@ body::before {
   border-color: transparent;
 }
 
-.gender-picker {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  min-inline-size: 0;
-}
-
-.gender-picker > legend {
-  padding: 0;
-  margin: 0 0 0.4rem;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.gender-picker-options {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.55rem;
-}
-
-.gender-card {
-  position: relative;
-  cursor: pointer;
-  margin: 0;
-}
-
-.gender-card input {
-  position: absolute;
-  opacity: 0;
-  inset: 0;
-  margin: 0;
-}
-
-.gender-card-face {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.55rem;
-  align-items: center;
-  min-height: 3.5rem;
-  padding: 0.65rem 0.75rem;
-  border-radius: 16px;
-  border: 1.5px solid var(--line);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 6px 16px rgba(7, 40, 32, 0.05);
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.18s ease, box-shadow 0.2s ease;
-}
-
-.gender-card-icon {
-  display: grid;
-  place-items: center;
-  width: 2.15rem;
-  height: 2.15rem;
-  border-radius: 12px;
-  background: var(--mist);
-  color: var(--muted);
-  transition: background 0.2s ease, color 0.2s ease;
-}
-
-.gender-card-text {
-  display: grid;
-  gap: 0.05rem;
-  min-width: 0;
-}
-
-.gender-card-text strong {
-  font-size: 0.95rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
-
-.gender-card-text small {
-  font-size: 0.72rem;
-  color: var(--muted);
-  font-weight: 600;
-}
-
-.gender-card.male input:checked + .gender-card-face {
-  border-color: rgba(29, 79, 145, 0.45);
-  background: linear-gradient(160deg, #eef4ff 0%, #ffffff 70%);
-  box-shadow: 0 8px 20px rgba(29, 79, 145, 0.12);
-}
-
-.gender-card.male input:checked + .gender-card-face .gender-card-icon {
-  background: #1d4f91;
-  color: #eef4ff;
-}
-
-.gender-card.female input:checked + .gender-card-face {
-  border-color: rgba(138, 47, 74, 0.4);
-  background: linear-gradient(160deg, #fff0f4 0%, #ffffff 70%);
-  box-shadow: 0 8px 20px rgba(138, 47, 74, 0.12);
-}
-
-.gender-card.female input:checked + .gender-card-face .gender-card-icon {
-  background: #8a2f4a;
-  color: #fff0f4;
-}
-
-.gender-card:active .gender-card-face {
-  transform: scale(0.98);
-}
-
-.gender-card input:focus-visible + .gender-card-face {
-  outline: 2px solid rgba(212, 255, 74, 0.85);
-  outline-offset: 2px;
-}
-
 .add-btn,
 .primary-btn {
   border: 0;
   border-radius: 14px;
-  padding: 0.9rem 1.1rem;
+  padding: 0.8rem 1rem;
   font: inherit;
   font-weight: 700;
   background: var(--lime);
   color: var(--lime-ink);
   cursor: pointer;
   transition: transform 0.18s ease, filter 0.18s ease;
+  white-space: nowrap;
 }
 
 .add-btn:active,
@@ -589,7 +499,9 @@ body::before {
   right: 0;
   bottom: 0;
   margin-inline: auto;
-  width: min(100%, 430px);
+  width: min(100% - 0rem, 430px);
+  max-width: 100%;
+  box-sizing: border-box;
   padding: 0.85rem 1rem calc(1rem + var(--safe-bottom));
   background:
     linear-gradient(to top, rgba(231, 241, 234, 1) 55%, rgba(231, 241, 234, 0.92) 78%, transparent);
@@ -603,19 +515,26 @@ body::before {
 }
 
 .primary-cta {
+  -webkit-appearance: none;
+  appearance: none;
   width: 100%;
+  box-sizing: border-box;
   border: 2px solid rgba(16, 35, 28, 0.12);
   border-radius: 18px;
-  padding: 1.05rem 1.1rem 0.95rem;
-  min-height: 3.75rem;
+  padding: 0.95rem 1rem;
+  min-height: 3.5rem;
   background: var(--lime);
   color: var(--lime-ink);
   box-shadow:
     0 12px 28px rgba(7, 40, 32, 0.22),
     0 0 0 1px rgba(212, 255, 74, 0.35);
   cursor: pointer;
-  display: grid;
-  gap: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  text-align: center;
   transition: transform 0.2s ease, opacity 0.2s ease, background 0.25s ease, box-shadow 0.25s ease, filter 0.2s ease;
 }
 
@@ -638,19 +557,30 @@ body::before {
   filter: brightness(0.97);
 }
 
+.cta-label,
+.cta-sub {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
 .cta-label {
   font-family: var(--font-display);
-  font-size: 1.22rem;
+  font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  line-height: 1.1;
+  line-height: 1.15;
 }
 
 .cta-sub {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   opacity: 0.8;
   font-weight: 600;
   color: inherit;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sheet {
@@ -1076,6 +1006,16 @@ body::before {
 
   .fab-dock {
     width: min(100%, 720px);
+    padding-inline: 1.25rem;
+  }
+
+  .primary-cta {
+    max-width: 28rem;
+    margin-inline: auto;
+  }
+
+  .cta-sub {
+    white-space: normal;
   }
 
   .main {
@@ -1089,6 +1029,17 @@ body::before {
   .courts-section { grid-area: courts; }
   .players-section { grid-area: players; }
   .games-section { grid-area: games; }
+}
+
+@media (max-width: 360px) {
+  .add-player {
+    grid-template-columns: minmax(0, 1fr) 5.75rem auto;
+  }
+
+  .add-player select {
+    font-size: 0.92rem;
+    padding-left: 0.65rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
