@@ -6,15 +6,18 @@
   <meta name="theme-color" content="#e7f1ea" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <meta name="apple-mobile-web-app-title" content="Next Up" />
   <meta name="description" content="Next Up — fair doubles scheduling for badminton clubs" />
   <title>Next Up — Badminton Scheduler</title>
+  <!-- Instant paint so a failed CSS load never shows a black Home Screen shell -->
+  <style>html,body{margin:0;min-height:100%;background:#e7f1ea;color:#10231c}</style>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
   <link rel="stylesheet" href="css/fonts.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <script src="js/offline.js" defer></script>
 </head>
 <body>
   <div class="app" id="app">
@@ -192,16 +195,5 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script type="module" src="js/app.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      // Register ASAP (don't wait for load) so standalone relaunches stay controlled offline
-      navigator.serviceWorker
-        .register('./sw.js', { scope: './' })
-        .then((reg) => {
-          reg.update().catch(() => {});
-        })
-        .catch(() => {});
-    }
-  </script>
 </body>
 </html>
