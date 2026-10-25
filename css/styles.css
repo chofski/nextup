@@ -498,15 +498,19 @@ body::before {
   left: 0;
   right: 0;
   bottom: 0;
-  margin-inline: auto;
-  width: min(100% - 0rem, 430px);
-  max-width: 100%;
+  width: 100%;
   box-sizing: border-box;
-  padding: 0.85rem 1rem calc(1rem + var(--safe-bottom));
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  padding:
+    0.85rem
+    max(1rem, env(safe-area-inset-right, 0px))
+    calc(1rem + var(--safe-bottom))
+    max(1rem, env(safe-area-inset-left, 0px));
   background:
     linear-gradient(to top, rgba(231, 241, 234, 1) 55%, rgba(231, 241, 234, 0.92) 78%, transparent);
   z-index: 30;
-  animation: dock-rise 0.65s cubic-bezier(0.22, 1, 0.36, 1) 0.2s both;
   pointer-events: none;
 }
 
@@ -517,7 +521,10 @@ body::before {
 .primary-cta {
   -webkit-appearance: none;
   appearance: none;
-  width: 100%;
+  /* Match the centered .app column so the dock doesn't drift on Safari */
+  width: min(100%, 398px); /* 430px app - 2rem padding */
+  max-width: 100%;
+  margin: 0;
   box-sizing: border-box;
   border: 2px solid rgba(16, 35, 28, 0.12);
   border-radius: 18px;
@@ -535,6 +542,7 @@ body::before {
   justify-content: center;
   gap: 0.15rem;
   text-align: center;
+  animation: dock-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   transition: transform 0.2s ease, opacity 0.2s ease, background 0.25s ease, box-shadow 0.25s ease, filter 0.2s ease;
 }
 
@@ -1005,13 +1013,12 @@ body::before {
   }
 
   .fab-dock {
-    width: min(100%, 720px);
-    padding-inline: 1.25rem;
+    width: 100%;
+    padding-inline: max(1.25rem, env(safe-area-inset-left, 0px)) max(1.25rem, env(safe-area-inset-right, 0px));
   }
 
   .primary-cta {
-    max-width: 28rem;
-    margin-inline: auto;
+    width: min(100%, 688px); /* 720px app - 2rem padding */
   }
 
   .cta-sub {
