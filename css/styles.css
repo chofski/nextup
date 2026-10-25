@@ -245,13 +245,15 @@ body::before {
 
 .add-player {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr auto auto;
   gap: 0.5rem;
   margin-bottom: 0.75rem;
+  align-items: stretch;
 }
 
-.add-player input,
-.field input,
+.add-player input[type="text"],
+.field input[type="text"],
+.field input:not([type="checkbox"]),
 .field select {
   width: 100%;
   border: 1px solid var(--line);
@@ -263,12 +265,58 @@ body::before {
   color: var(--ink);
 }
 
-.add-player input:focus,
-.field input:focus,
+.add-player input[type="text"]:focus,
+.field input[type="text"]:focus,
+.field input:not([type="checkbox"]):focus,
 .field select:focus {
   outline: 2px solid rgba(212, 255, 74, 0.7);
   outline-offset: 1px;
   border-color: transparent;
+}
+
+.gender-toggle {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  overflow: hidden;
+  background: var(--surface-strong);
+  min-width: 5.4rem;
+}
+
+.gender-option {
+  position: relative;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.gender-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gender-option span {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: 2.75rem;
+  font-weight: 800;
+  font-size: 0.95rem;
+  color: var(--muted);
+  transition: background 0.18s ease, color 0.18s ease;
+}
+
+.gender-option input:checked + span {
+  background: var(--court);
+  color: var(--lime);
+}
+
+.gender-option + .gender-option span {
+  border-left: 1px solid var(--line);
 }
 
 .add-btn,
@@ -311,19 +359,37 @@ body::before {
   animation-delay: var(--enter-delay, 0ms);
 }
 
-.player-dot {
-  width: 0.7rem;
-  height: 0.7rem;
-  border-radius: 50%;
-  background: var(--free);
-  box-shadow: 0 0 0 4px rgba(31, 138, 99, 0.15);
-  transition: background 0.25s ease, box-shadow 0.25s ease;
+.gender-badge {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: transform 0.15s ease, background 0.2s ease;
 }
 
-.player-row.playing .player-dot {
-  background: var(--playing);
-  box-shadow: 0 0 0 4px rgba(196, 92, 38, 0.16);
-  animation: pulse-dot 1.8s ease-in-out infinite;
+.gender-badge.male {
+  background: #e7f0ff;
+  color: #1d4f91;
+  border-color: rgba(29, 79, 145, 0.18);
+}
+
+.gender-badge.female {
+  background: #fdecef;
+  color: #8a2f4a;
+  border-color: rgba(138, 47, 74, 0.18);
+}
+
+.gender-badge:active {
+  transform: scale(0.94);
+}
+
+.player-row.playing .gender-badge {
+  box-shadow: 0 0 0 3px rgba(196, 92, 38, 0.16);
 }
 
 .player-info {
@@ -581,6 +647,28 @@ body::before {
   font-size: 0.78rem;
 }
 
+.check-field {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 0.75rem;
+}
+
+.check-field > span {
+  grid-column: 1;
+}
+
+.check-field input[type="checkbox"] {
+  width: 1.25rem;
+  height: 1.25rem;
+  accent-color: var(--court);
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.check-field small {
+  grid-column: 1 / -1;
+}
+
 .stepper {
   display: grid;
   grid-template-columns: 3rem 1fr 3rem;
@@ -665,15 +753,49 @@ body::before {
   gap: 0.4rem;
 }
 
+.match-type-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  background: var(--court);
+  color: var(--lime);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .chip {
   display: inline-flex;
   align-items: center;
+  gap: 0.35rem;
   padding: 0.45rem 0.65rem;
   border-radius: 999px;
   background: white;
   font-weight: 700;
   font-size: 0.88rem;
   box-shadow: 0 4px 12px rgba(7, 40, 32, 0.06);
+}
+
+.chip-gender {
+  display: inline-grid;
+  place-items: center;
+  width: 1.15rem;
+  height: 1.15rem;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.chip-gender.male {
+  background: #e7f0ff;
+  color: #1d4f91;
+}
+
+.chip-gender.female {
+  background: #fdecef;
+  color: #8a2f4a;
 }
 
 .toast {

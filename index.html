@@ -55,11 +55,22 @@
             enterkeyhint="done"
             required
           />
+          <fieldset class="gender-toggle" id="genderToggle">
+            <legend class="sr-only">Gender</legend>
+            <label class="gender-option">
+              <input type="radio" name="playerGender" value="male" checked />
+              <span>M</span>
+            </label>
+            <label class="gender-option">
+              <input type="radio" name="playerGender" value="female" />
+              <span>F</span>
+            </label>
+          </fieldset>
           <button type="submit" class="add-btn" aria-label="Add player">Add</button>
         </form>
 
         <ul class="player-list" id="playerList" aria-live="polite"></ul>
-        <p class="empty-hint" id="playersEmpty">No one here yet. Add the first arrival above.</p>
+        <p class="empty-hint" id="playersEmpty">No one here yet. Add arrivals above and mark each M or F.</p>
       </section>
 
       <section class="section games-section" aria-labelledby="gamesHeading">
@@ -68,7 +79,7 @@
           <p class="section-meta" id="gamesMeta">No matches yet</p>
         </div>
         <div class="game-list" id="gameList"></div>
-        <p class="empty-hint" id="gamesEmpty">Free a court and start a doubles match when four people are waiting.</p>
+        <p class="empty-hint" id="gamesEmpty">Start mixed (2M+2F) or same-gender doubles when a court is free.</p>
       </section>
     </main>
 
@@ -118,6 +129,12 @@
         <small>Used to estimate when a court frees up.</small>
       </label>
 
+      <label class="field check-field">
+        <span>Prefer mixed doubles</span>
+        <input type="checkbox" id="preferMixed" checked />
+        <small>When 2 men and 2 women are waiting, favour mixed (M+F pairs) over same-gender doubles.</small>
+      </label>
+
       <div class="sheet-actions">
         <button type="button" class="ghost-btn danger" id="resetSessionBtn">Reset session</button>
         <button type="submit" class="primary-btn" value="save" id="saveSettingsBtn">Save</button>
@@ -137,6 +154,15 @@
         </button>
       </header>
       <p class="match-intro" id="matchIntro">Fair mix based on games played and who has already partnered.</p>
+      <label class="field">
+        <span>Match type</span>
+        <select id="matchTypeSelect">
+          <option value="auto">Auto (best available)</option>
+          <option value="mixed">Mixed (2 male · 2 female)</option>
+          <option value="mens">Men's doubles</option>
+          <option value="womens">Women's doubles</option>
+        </select>
+      </label>
       <div class="match-preview" id="matchPreview"></div>
       <label class="field">
         <span>Court</span>

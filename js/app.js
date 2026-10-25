@@ -1,5 +1,11 @@
 import { loadState, saveState, clearState } from './storage.js';
-import { suggestDoubles, recordPartnerships } from './scheduler.js';
+import {
+  suggestDoubles,
+  recordPartnerships,
+  canFormMatch,
+  availableMatchTypes,
+  matchTypeLabel,
+} from './scheduler.js';
 
 const uid = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
@@ -9,6 +15,7 @@ const uid = () =>
 let state = loadState();
 let pendingMatch = null;
 let reshuffleNonce = 0;
+let selectedMatchType = 'auto';
 let toastTimer = null;
 
 const els = {
@@ -34,10 +41,12 @@ const els = {
   courtMinus: document.getElementById('courtMinus'),
   courtPlus: document.getElementById('courtPlus'),
   gameMinutes: document.getElementById('gameMinutes'),
+  preferMixed: document.getElementById('preferMixed'),
   resetSessionBtn: document.getElementById('resetSessionBtn'),
   matchSheet: document.getElementById('matchSheet'),
   matchIntro: document.getElementById('matchIntro'),
   matchPreview: document.getElementById('matchPreview'),
+  matchTypeSelect: document.getElementById('matchTypeSelect'),
   matchCourtSelect: document.getElementById('matchCourtSelect'),
   closeMatchSheet: document.getElementById('closeMatchSheet'),
   reshuffleBtn: document.getElementById('reshuffleBtn'),
@@ -78,6 +87,15 @@ function playerById(id) {
   return state.players.find((p) => p.id === id);
 }
 
+function selectedGender() {
+  const picked = els.addPlayerForm.querySelector('input[name="playerGender"]:checked');
+  return picked?.value === 'female' ? 'female' : 'male';
+}
+
+function genderShort(gender) {
+  return gender === 'female' ? 'F' : 'M';
+}
+
 function formatRemaining(freesAt) {
   if (!freesAt) return null;
   const ms = freesAt - Date.now();
@@ -87,23 +105,30 @@ function formatRemaining(freesAt) {
 }
 
 function canStartMatch() {
-  return waitingPlayers().length >= 4 && freeCourts().length >= 1;
+  return canFormMatch(waitingPlayers()) && freeCourts().length >= 1;
 }
 
 function updateStartButton() {
-  const waiting = waitingPlayers().length;
+  const waiting = waitingPlayers();
   const free = freeCourts().length;
-  const ok = canStartMatch();
+  const avail = availableMatchTypes(waiting);
+  const ok = avail.types.length > 0 && free >= 1;
   els.startMatchBtn.disabled = !ok;
 
   if (ok) {
-    els.startMatchHint.textContent = `${waiting} waiting · ${free} court${free === 1 ? '' : 's'} free`;
-  } else if (waiting < 4 && free < 1) {
-    els.startMatchHint.textContent = `Need ${4 - waiting} more player${4 - waiting === 1 ? '' : 's'} + a free court`;
-  } else if (waiting < 4) {
-    els.startMatchHint.textContent = `Need ${4 - waiting} more waiting player${4 - waiting === 1 ? '' : 's'}`;
-  } else {
+    const kinds = avail.types.map(matchTypeLabel).join(' · ');
+    els.startMatchHint.textContent = `${avail.male}M · ${avail.female}F waiting · ${free} free · ${kinds}`;
+    return;
+  }
+
+  if (free < 1 && avail.types.length === 0) {
+    els.startMatchHint.textContent = 'Need a valid lineup + a free court';
+  } else if (free < 1) {
     els.startMatchHint.textContent = 'All courts are busy — end a match first';
+  } else if (avail.male + avail.female < 4) {
+    els.startMatchHint.textContent = `Need more players (${avail.male}M · ${avail.female}F)`;
+  } else {
+    els.startMatchHint.textContent = `Need 2M+2F, 4M, or 4F (now ${avail.male}M · ${avail.female}F)`;
   }
 }
 
@@ -121,14 +146,14 @@ function renderCourts() {
     el.dataset.courtId = court.id;
 
     const remaining = formatRemaining(court.freesAt);
-    const names = game
-      ? game.playerIds.map((id) => playerById(id)?.name || '?').join(', ')
+    const detail = game
+      ? `${matchTypeLabel(game.matchType)} · ${remaining || 'In progress'}`
       : 'Ready for doubles';
 
     el.innerHTML = `
       <span class="court-num">Court ${court.number}</span>
       <span class="court-status">${court.status === 'free' ? 'Free' : 'In play'}</span>
-      <span class="court-detail">${court.status === 'free' ? names : remaining || 'In progress'}</span>
+      <span class="court-detail">${detail}</span>
     `;
 
     if (court.status === 'free' && canStartMatch()) {
@@ -143,10 +168,13 @@ function renderCourts() {
 
 function renderPlayers() {
   const total = state.players.length;
-  const waiting = waitingPlayers().length;
-  const playing = total - waiting;
+  const waiting = waitingPlayers();
+  const playing = total - waiting.length;
+  const avail = availableMatchTypes(waiting);
   els.playersMeta.textContent =
-    total === 0 ? '0 present' : `${total} present · ${waiting} waiting · ${playing} playing`;
+    total === 0
+      ? '0 present'
+      : `${total} present · ${avail.male}M · ${avail.female}F waiting · ${playing} playing`;
 
   els.playersEmpty.hidden = total > 0;
   els.playerList.replaceChildren();
@@ -160,9 +188,12 @@ function renderPlayers() {
     const li = document.createElement('li');
     li.className = `player-row ${player.status}`;
     li.style.setProperty('--enter-delay', `${Math.min(ordered.indexOf(player) * 28, 280)}ms`);
+    const g = player.gender === 'female' ? 'female' : 'male';
 
     li.innerHTML = `
-      <span class="player-dot" aria-hidden="true"></span>
+      <button type="button" class="gender-badge ${g}" data-toggle-gender="${player.id}" aria-label="Toggle gender for ${escapeHtml(player.name)}, currently ${g}">
+        ${genderShort(g)}
+      </button>
       <div class="player-info">
         <span class="player-name">${escapeHtml(player.name)}</span>
         <span class="player-state">${player.status === 'playing' ? 'Playing' : 'Waiting'} · ${player.gamesPlayed || 0} game${(player.gamesPlayed || 0) === 1 ? '' : 's'}</span>
@@ -182,15 +213,21 @@ function renderGames() {
 
   for (const game of games) {
     const court = state.courts.find((c) => c.id === game.courtId);
-    const teamA = game.teamA.map((id) => playerById(id)?.name || '?');
-    const teamB = game.teamB.map((id) => playerById(id)?.name || '?');
+    const teamA = game.teamA.map((id) => {
+      const p = playerById(id);
+      return p ? `${p.name} (${genderShort(p.gender)})` : '?';
+    });
+    const teamB = game.teamB.map((id) => {
+      const p = playerById(id);
+      return p ? `${p.name} (${genderShort(p.gender)})` : '?';
+    });
     const remaining = formatRemaining(court?.freesAt);
 
     const card = document.createElement('article');
     card.className = 'game-card';
     card.innerHTML = `
       <header class="game-card-head">
-        <h3>Court ${court?.number ?? '?'}</h3>
+        <h3>Court ${court?.number ?? '?'} · ${escapeHtml(matchTypeLabel(game.matchType))}</h3>
         <span>${remaining || 'In progress'}</span>
       </header>
       <div class="matchup">
@@ -226,7 +263,7 @@ function escapeHtml(str) {
     .replaceAll('"', '&quot;');
 }
 
-function addPlayer(name) {
+function addPlayer(name, gender) {
   const trimmed = name.trim().replace(/\s+/g, ' ');
   if (!trimmed) return;
 
@@ -236,16 +273,18 @@ function addPlayer(name) {
     return;
   }
 
+  const g = gender === 'female' ? 'female' : 'male';
   state.players.push({
     id: uid(),
     name: trimmed,
+    gender: g,
     status: 'waiting',
     gamesPlayed: 0,
     arrivedAt: Date.now(),
   });
   persist();
   renderAll();
-  showToast(`${trimmed} is waiting`);
+  showToast(`${trimmed} (${genderShort(g)}) is waiting`);
 }
 
 function removePlayer(id) {
@@ -257,16 +296,53 @@ function removePlayer(id) {
   showToast(`${player.name} removed`);
 }
 
+function togglePlayerGender(id) {
+  const player = playerById(id);
+  if (!player || player.status === 'playing') {
+    if (player?.status === 'playing') showToast('End their match before changing gender');
+    return;
+  }
+  player.gender = player.gender === 'female' ? 'male' : 'female';
+  persist();
+  renderAll();
+  showToast(`${player.name} marked ${player.gender === 'female' ? 'female' : 'male'}`);
+}
+
+function suggestOptions() {
+  return {
+    reshuffleNonce,
+    matchType: selectedMatchType,
+    preferMixed: state.preferMixed !== false,
+  };
+}
+
+function refreshMatchTypeOptions() {
+  const avail = availableMatchTypes(waitingPlayers());
+  const select = els.matchTypeSelect;
+  for (const opt of select.options) {
+    if (opt.value === 'auto') {
+      opt.disabled = avail.types.length === 0;
+      continue;
+    }
+    opt.disabled = !avail.types.includes(opt.value);
+  }
+  if (selectedMatchType !== 'auto' && !avail.types.includes(selectedMatchType)) {
+    selectedMatchType = 'auto';
+  }
+  select.value = selectedMatchType;
+}
+
 function openMatchSheet(preferredCourtId = null) {
   if (!canStartMatch()) {
-    showToast('Need 4 waiting players and a free court');
+    showToast('Need a mixed or same-gender lineup and a free court');
     return;
   }
 
   reshuffleNonce = 0;
-  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, { reshuffleNonce });
+  refreshMatchTypeOptions();
+  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, suggestOptions());
   if (!pendingMatch) {
-    showToast('Could not build a match');
+    showToast('Could not build a match for that type');
     return;
   }
 
@@ -286,22 +362,33 @@ function openMatchSheet(preferredCourtId = null) {
 
 function renderMatchPreview() {
   if (!pendingMatch) return;
-  const { teamA, teamB } = pendingMatch;
+  const { teamA, teamB, matchType, label } = pendingMatch;
   els.matchPreview.innerHTML = `
+    <div class="match-type-badge ${matchType || ''}">${escapeHtml(label || matchTypeLabel(matchType))}</div>
     <div class="preview-sides">
       <div class="preview-team">
         <span class="team-label">Side A</span>
-        ${teamA.map((p) => `<span class="chip">${escapeHtml(p.name)}</span>`).join('')}
+        ${teamA
+          .map(
+            (p) =>
+              `<span class="chip"><span class="chip-gender ${p.gender}">${genderShort(p.gender)}</span>${escapeHtml(p.name)}</span>`
+          )
+          .join('')}
       </div>
       <span class="vs">vs</span>
       <div class="preview-team">
         <span class="team-label">Side B</span>
-        ${teamB.map((p) => `<span class="chip">${escapeHtml(p.name)}</span>`).join('')}
+        ${teamB
+          .map(
+            (p) =>
+              `<span class="chip"><span class="chip-gender ${p.gender}">${genderShort(p.gender)}</span>${escapeHtml(p.name)}</span>`
+          )
+          .join('')}
       </div>
     </div>
   `;
   const games = [...teamA, ...teamB].map((p) => p.gamesPlayed || 0);
-  els.matchIntro.textContent = `Balanced mix · players have ${Math.min(...games)}–${Math.max(...games)} games so far`;
+  els.matchIntro.textContent = `${label || matchTypeLabel(matchType)} · players have ${Math.min(...games)}–${Math.max(...games)} games so far`;
 }
 
 function confirmMatch() {
@@ -329,6 +416,7 @@ function confirmMatch() {
   state.games.push({
     id: gameId,
     courtId: court.id,
+    matchType: pendingMatch.matchType || 'mens',
     teamA,
     teamB,
     playerIds: [...teamA, ...teamB],
@@ -346,11 +434,12 @@ function confirmMatch() {
   }
 
   state.pairHistory = recordPartnerships(state.pairHistory, teamA, teamB);
+  const startedType = pendingMatch.matchType;
   pendingMatch = null;
   persist();
   els.matchSheet.close();
   renderAll();
-  showToast(`Court ${court.number} is live`);
+  showToast(`${matchTypeLabel(startedType)} on court ${court.number}`);
 }
 
 function endGame(gameId) {
@@ -375,7 +464,6 @@ function endGame(gameId) {
     court.freesAt = null;
   }
 
-  // Keep only active games in working set (history lives in pairHistory + gamesPlayed)
   state.games = state.games.filter((g) => g.status === 'active');
 
   persist();
@@ -389,6 +477,7 @@ function openSettings() {
   els.courtCount.value = String(state.courtCount);
   els.courtCountOutput.textContent = String(state.courtCount);
   els.gameMinutes.value = String(state.gameMinutes || 20);
+  els.preferMixed.checked = state.preferMixed !== false;
   els.settingsSheet.showModal();
 }
 
@@ -415,7 +504,6 @@ function applyCourtCount(nextCount) {
       freesAt: null,
     });
   }
-  // Renumber
   existing.forEach((c, i) => {
     c.number = i + 1;
   });
@@ -426,12 +514,17 @@ function applyCourtCount(nextCount) {
 // —— Events ——
 els.addPlayerForm.addEventListener('submit', (e) => {
   e.preventDefault();
-  addPlayer(els.playerName.value);
+  addPlayer(els.playerName.value, selectedGender());
   els.playerName.value = '';
   els.playerName.focus();
 });
 
 els.playerList.addEventListener('click', (e) => {
+  const genderBtn = e.target.closest('[data-toggle-gender]');
+  if (genderBtn) {
+    togglePlayerGender(genderBtn.dataset.toggleGender);
+    return;
+  }
   const btn = e.target.closest('.remove-player');
   if (!btn || btn.disabled) return;
   removePlayer(btn.dataset.id);
@@ -468,6 +561,7 @@ els.settingsForm.addEventListener('submit', (e) => {
   e.preventDefault();
   state.sessionName = els.sessionNameInput.value.trim() || 'Club session';
   state.gameMinutes = Number(els.gameMinutes.value) || 20;
+  state.preferMixed = !!els.preferMixed.checked;
   const ok = applyCourtCount(Number(els.courtCount.value));
   if (!ok) return;
   persist();
@@ -491,9 +585,24 @@ els.closeMatchSheet.addEventListener('click', () => {
   els.matchSheet.close();
 });
 
+els.matchTypeSelect.addEventListener('change', () => {
+  selectedMatchType = els.matchTypeSelect.value || 'auto';
+  reshuffleNonce = 0;
+  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, suggestOptions());
+  if (!pendingMatch) {
+    showToast('No lineup for that match type yet');
+    renderMatchPreview();
+    return;
+  }
+  renderMatchPreview();
+  els.matchPreview.classList.remove('pulse');
+  void els.matchPreview.offsetWidth;
+  els.matchPreview.classList.add('pulse');
+});
+
 els.reshuffleBtn.addEventListener('click', () => {
   reshuffleNonce += 1;
-  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, { reshuffleNonce });
+  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, suggestOptions());
   if (!pendingMatch) {
     showToast('No alternate lineup');
     return;
@@ -506,7 +615,6 @@ els.reshuffleBtn.addEventListener('click', () => {
 
 els.confirmMatchBtn.addEventListener('click', confirmMatch);
 
-// Tick remaining times
 setInterval(() => {
   if (activeGames().length === 0) return;
   renderCourts();
