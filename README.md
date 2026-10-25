@@ -33,4 +33,5 @@ npm test
 ## iPhone / installable app
 
 - **PWA:** Safari → Share → Add to Home Screen (works with the included manifest + service worker).
+- Fonts (Figtree / Syne) are self-hosted under `assets/fonts/` and cached offline — no Google Fonts request after the first load.
 - **Native shell:** Capacitor scaffolding is included — see [docs/IOS.md](docs/IOS.md).

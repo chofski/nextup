@@ -1,8 +1,9 @@
 /* Next Up offline shell — cache app assets for home-screen / Capacitor use */
-const CACHE = 'nextup-v1';
+const CACHE = 'nextup-v2';
 const ASSETS = [
   './',
   './index.html',
+  './css/fonts.css',
   './css/styles.css',
   './js/app.js',
   './js/scheduler.js',
@@ -12,6 +13,13 @@ const ASSETS = [
   './assets/icons/icon-512.png',
   './assets/icons/apple-touch-icon.png',
   './assets/icons/icon.svg',
+  './assets/fonts/figtree-latin-400-normal.woff2',
+  './assets/fonts/figtree-latin-500-normal.woff2',
+  './assets/fonts/figtree-latin-600-normal.woff2',
+  './assets/fonts/figtree-latin-700-normal.woff2',
+  './assets/fonts/syne-latin-600-normal.woff2',
+  './assets/fonts/syne-latin-700-normal.woff2',
+  './assets/fonts/syne-latin-800-normal.woff2',
 ];
 
 self.addEventListener('install', (event) => {
