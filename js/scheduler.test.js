@@ -1,4 +1,11 @@
-import { suggestDoubles, recordPartnerships, canFormMatch, availableMatchTypes } from './scheduler.js';
+import {
+  suggestDoubles,
+  recordPartnerships,
+  canFormMatch,
+  availableMatchTypes,
+  buildMatchFromSelection,
+  selectionIsValid,
+} from './scheduler.js';
 
 function assert(cond, msg) {
   if (!cond) throw new Error(msg);
@@ -86,5 +93,22 @@ assert(nextMens.playerIds.includes('m4') && nextMens.playerIds.includes('m5'), '
 
 const reshuffled = suggestDoubles(mixedPool, {}, { matchType: 'mixed', reshuffleNonce: 1 });
 assert(reshuffled, 'reshuffle works');
+
+// Manual selection
+const manualPlayers = mixedPool.filter((p) => ['m0', 'm1', 'f0', 'f1'].includes(p.id));
+assert(selectionIsValid(manualPlayers), 'manual 2M2F valid');
+const manual = buildMatchFromSelection(manualPlayers, {}, 0);
+assert(manual && manual.manual && manual.matchType === 'mixed', 'manual mixed match');
+assert(!selectionIsValid(mixedPool.slice(0, 3)), '3 players invalid');
+assert(!selectionIsValid(makePlayers([
+  { gender: 'male' }, { gender: 'male' }, { gender: 'male' }, { gender: 'female' },
+])), '3M1F invalid');
+
+const swapped = buildMatchFromSelection(manualPlayers, {}, 1);
+assert(swapped, 'manual side swap');
+assert(
+  swapped.teamA[0].id !== manual.teamA[0].id || swapped.teamA[1].id !== manual.teamA[1].id,
+  'swap changes pairing'
+);
 
 console.log('scheduler tests passed');

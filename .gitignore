@@ -1,7 +1,12 @@
 # Dependencies / build
 node_modules/
 dist/
+www/
+ios/
+android/
 .DS_Store
 *.log
 .vscode/
 .idea/
+*.xcuserdata
+DerivedData/

@@ -1,0 +1,19 @@
+{
+  "appId": "club.nextup.app",
+  "appName": "Next Up",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic",
+    "backgroundColor": "#e7f1ea",
+    "preferredContentMode": "mobile"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true,
+      "backgroundColor": "#0c3b2e"
+    }
+  }
+}

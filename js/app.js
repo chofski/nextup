@@ -5,6 +5,7 @@ import {
   canFormMatch,
   availableMatchTypes,
   matchTypeLabel,
+  buildMatchFromSelection,
 } from './scheduler.js';
 
 const uid = () =>
@@ -16,6 +17,8 @@ let state = loadState();
 let pendingMatch = null;
 let reshuffleNonce = 0;
 let selectedMatchType = 'auto';
+let pickMode = 'suggested'; // suggested | manual
+let manualSelectedIds = [];
 let toastTimer = null;
 
 const els = {
@@ -51,6 +54,12 @@ const els = {
   closeMatchSheet: document.getElementById('closeMatchSheet'),
   reshuffleBtn: document.getElementById('reshuffleBtn'),
   confirmMatchBtn: document.getElementById('confirmMatchBtn'),
+  modeSuggestedBtn: document.getElementById('modeSuggestedBtn'),
+  modeManualBtn: document.getElementById('modeManualBtn'),
+  suggestedControls: document.getElementById('suggestedControls'),
+  manualControls: document.getElementById('manualControls'),
+  manualPickList: document.getElementById('manualPickList'),
+  manualHint: document.getElementById('manualHint'),
   toast: document.getElementById('toast'),
 };
 
@@ -332,6 +341,99 @@ function refreshMatchTypeOptions() {
   select.value = selectedMatchType;
 }
 
+function setPickMode(mode) {
+  pickMode = mode === 'manual' ? 'manual' : 'suggested';
+  els.modeSuggestedBtn.classList.toggle('is-active', pickMode === 'suggested');
+  els.modeManualBtn.classList.toggle('is-active', pickMode === 'manual');
+  els.modeSuggestedBtn.setAttribute('aria-selected', pickMode === 'suggested' ? 'true' : 'false');
+  els.modeManualBtn.setAttribute('aria-selected', pickMode === 'manual' ? 'true' : 'false');
+  els.suggestedControls.hidden = pickMode !== 'suggested';
+  els.manualControls.hidden = pickMode !== 'manual';
+  els.reshuffleBtn.textContent = pickMode === 'manual' ? 'Swap sides' : 'Reshuffle';
+
+  if (pickMode === 'suggested') {
+    els.matchIntro.textContent = 'Fair mix based on games played and who has already partnered.';
+    refreshSuggestedMatch();
+  } else {
+    els.matchIntro.textContent = 'Choose any valid 4 waiting players, then start when the lineup looks right.';
+    reshuffleNonce = 0;
+    rebuildManualMatch();
+    renderManualPickList();
+  }
+  updateConfirmEnabled();
+}
+
+function refreshSuggestedMatch() {
+  refreshMatchTypeOptions();
+  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, suggestOptions());
+  renderMatchPreview();
+  updateConfirmEnabled();
+}
+
+function selectedManualPlayers() {
+  return manualSelectedIds.map((id) => playerById(id)).filter(Boolean);
+}
+
+function rebuildManualMatch() {
+  pendingMatch = buildMatchFromSelection(selectedManualPlayers(), state.pairHistory, reshuffleNonce);
+  renderMatchPreview();
+  updateManualHint();
+  updateConfirmEnabled();
+}
+
+function updateManualHint() {
+  const n = manualSelectedIds.length;
+  if (n < 4) {
+    els.manualHint.textContent = `Selected ${n} of 4 · need a valid mixed (2M+2F) or same-gender set.`;
+    return;
+  }
+  if (!pendingMatch) {
+    els.manualHint.textContent = 'Those four can’t form mixed or same-gender doubles. Change the selection.';
+    return;
+  }
+  els.manualHint.textContent = `${pendingMatch.label} ready · tap Swap sides for another pairing.`;
+}
+
+function renderManualPickList() {
+  const waiting = waitingPlayers().sort((a, b) => a.name.localeCompare(b.name));
+  els.manualPickList.replaceChildren();
+
+  for (const player of waiting) {
+    const selected = manualSelectedIds.includes(player.id);
+    const atLimit = !selected && manualSelectedIds.length >= 4;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `manual-pick ${selected ? 'is-selected' : ''}`;
+    btn.disabled = atLimit;
+    btn.dataset.id = player.id;
+    btn.innerHTML = `
+      <span class="manual-pick-check" aria-hidden="true">${selected ? '✓' : ''}</span>
+      <span>
+        <span class="manual-pick-name">${escapeHtml(player.name)}</span>
+        <span class="manual-pick-meta">${player.gamesPlayed || 0} game${(player.gamesPlayed || 0) === 1 ? '' : 's'}</span>
+      </span>
+      <span class="gender-badge ${player.gender === 'female' ? 'female' : 'male'}">${genderShort(player.gender)}</span>
+    `;
+    els.manualPickList.appendChild(btn);
+  }
+}
+
+function toggleManualPlayer(id) {
+  const idx = manualSelectedIds.indexOf(id);
+  if (idx >= 0) {
+    manualSelectedIds = manualSelectedIds.filter((x) => x !== id);
+  } else if (manualSelectedIds.length < 4) {
+    manualSelectedIds = [...manualSelectedIds, id];
+  }
+  reshuffleNonce = 0;
+  rebuildManualMatch();
+  renderManualPickList();
+}
+
+function updateConfirmEnabled() {
+  els.confirmMatchBtn.disabled = !pendingMatch;
+}
+
 function openMatchSheet(preferredCourtId = null) {
   if (!canStartMatch()) {
     showToast('Need a mixed or same-gender lineup and a free court');
@@ -339,12 +441,8 @@ function openMatchSheet(preferredCourtId = null) {
   }
 
   reshuffleNonce = 0;
-  refreshMatchTypeOptions();
-  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, suggestOptions());
-  if (!pendingMatch) {
-    showToast('Could not build a match for that type');
-    return;
-  }
+  manualSelectedIds = [];
+  pickMode = 'suggested';
 
   const frees = freeCourts();
   els.matchCourtSelect.replaceChildren();
@@ -356,15 +454,23 @@ function openMatchSheet(preferredCourtId = null) {
     els.matchCourtSelect.appendChild(opt);
   }
 
-  renderMatchPreview();
+  setPickMode('suggested');
   els.matchSheet.showModal();
 }
 
 function renderMatchPreview() {
-  if (!pendingMatch) return;
-  const { teamA, teamB, matchType, label } = pendingMatch;
+  if (!pendingMatch) {
+    els.matchPreview.innerHTML = `<p class="match-preview-empty">${
+      pickMode === 'manual'
+        ? 'Pick four players that make mixed or same-gender doubles.'
+        : 'No lineup available for this match type.'
+    }</p>`;
+    return;
+  }
+
+  const { teamA, teamB, matchType, label, manual } = pendingMatch;
   els.matchPreview.innerHTML = `
-    <div class="match-type-badge ${matchType || ''}">${escapeHtml(label || matchTypeLabel(matchType))}</div>
+    <div class="match-type-badge ${matchType || ''}">${escapeHtml(label || matchTypeLabel(matchType))}${manual ? ' · manual' : ''}</div>
     <div class="preview-sides">
       <div class="preview-team">
         <span class="team-label">Side A</span>
@@ -388,11 +494,16 @@ function renderMatchPreview() {
     </div>
   `;
   const games = [...teamA, ...teamB].map((p) => p.gamesPlayed || 0);
-  els.matchIntro.textContent = `${label || matchTypeLabel(matchType)} · players have ${Math.min(...games)}–${Math.max(...games)} games so far`;
+  if (pickMode === 'suggested') {
+    els.matchIntro.textContent = `${label || matchTypeLabel(matchType)} · players have ${Math.min(...games)}–${Math.max(...games)} games so far`;
+  }
 }
 
 function confirmMatch() {
-  if (!pendingMatch) return;
+  if (!pendingMatch) {
+    showToast(pickMode === 'manual' ? 'Select a valid set of 4 players first' : 'No lineup to start');
+    return;
+  }
   const courtId = els.matchCourtSelect.value;
   const court = state.courts.find((c) => c.id === courtId && c.status === 'free');
   if (!court) {
@@ -436,6 +547,7 @@ function confirmMatch() {
   state.pairHistory = recordPartnerships(state.pairHistory, teamA, teamB);
   const startedType = pendingMatch.matchType;
   pendingMatch = null;
+  manualSelectedIds = [];
   persist();
   els.matchSheet.close();
   renderAll();
@@ -582,32 +694,45 @@ els.resetSessionBtn.addEventListener('click', () => {
 
 els.closeMatchSheet.addEventListener('click', () => {
   pendingMatch = null;
+  manualSelectedIds = [];
   els.matchSheet.close();
+});
+
+els.modeSuggestedBtn.addEventListener('click', () => setPickMode('suggested'));
+els.modeManualBtn.addEventListener('click', () => setPickMode('manual'));
+
+els.manualPickList.addEventListener('click', (e) => {
+  const btn = e.target.closest('.manual-pick');
+  if (!btn || btn.disabled) return;
+  toggleManualPlayer(btn.dataset.id);
 });
 
 els.matchTypeSelect.addEventListener('change', () => {
   selectedMatchType = els.matchTypeSelect.value || 'auto';
   reshuffleNonce = 0;
-  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, suggestOptions());
-  if (!pendingMatch) {
-    showToast('No lineup for that match type yet');
-    renderMatchPreview();
-    return;
-  }
-  renderMatchPreview();
+  refreshSuggestedMatch();
+  if (!pendingMatch) showToast('No lineup for that match type yet');
   els.matchPreview.classList.remove('pulse');
   void els.matchPreview.offsetWidth;
   els.matchPreview.classList.add('pulse');
 });
 
 els.reshuffleBtn.addEventListener('click', () => {
-  reshuffleNonce += 1;
-  pendingMatch = suggestDoubles(waitingPlayers(), state.pairHistory, suggestOptions());
-  if (!pendingMatch) {
-    showToast('No alternate lineup');
-    return;
+  if (pickMode === 'manual') {
+    if (manualSelectedIds.length !== 4 || !pendingMatch) {
+      showToast('Select 4 valid players first');
+      return;
+    }
+    reshuffleNonce += 1;
+    rebuildManualMatch();
+  } else {
+    reshuffleNonce += 1;
+    refreshSuggestedMatch();
+    if (!pendingMatch) {
+      showToast('No alternate lineup');
+      return;
+    }
   }
-  renderMatchPreview();
   els.matchPreview.classList.remove('pulse');
   void els.matchPreview.offsetWidth;
   els.matchPreview.classList.add('pulse');

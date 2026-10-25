@@ -5,14 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#0c3b2e" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Next Up" />
   <meta name="description" content="Next Up — fair doubles scheduling for badminton clubs" />
   <title>Next Up — Badminton Scheduler</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+  <link rel="icon" type="image/png" sizes="192x192" href="assets/icons/icon-192.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/styles.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230c3b2e'/%3E%3Ccircle cx='16' cy='16' r='6' fill='%23d4ff4a'/%3E%3C/svg%3E" />
 </head>
 <body>
   <div class="app" id="app">
@@ -51,26 +55,52 @@
             name="playerName"
             type="text"
             maxlength="32"
-            placeholder="Add someone who arrived…"
+            placeholder="Name of someone who arrived…"
             enterkeyhint="done"
             required
           />
-          <fieldset class="gender-toggle" id="genderToggle">
-            <legend class="sr-only">Gender</legend>
-            <label class="gender-option">
-              <input type="radio" name="playerGender" value="male" checked />
-              <span>M</span>
-            </label>
-            <label class="gender-option">
-              <input type="radio" name="playerGender" value="female" />
-              <span>F</span>
-            </label>
+
+          <fieldset class="gender-picker" id="genderToggle">
+            <legend>Playing as</legend>
+            <div class="gender-picker-options">
+              <label class="gender-card male">
+                <input type="radio" name="playerGender" value="male" checked />
+                <span class="gender-card-face">
+                  <span class="gender-card-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="10" cy="14" r="5"/>
+                      <path d="M14.5 9.5L20 4M15 4h5v5"/>
+                    </svg>
+                  </span>
+                  <span class="gender-card-text">
+                    <strong>Male</strong>
+                    <small>Men’s / mixed</small>
+                  </span>
+                </span>
+              </label>
+              <label class="gender-card female">
+                <input type="radio" name="playerGender" value="female" />
+                <span class="gender-card-face">
+                  <span class="gender-card-icon" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="9" r="5"/>
+                      <path d="M12 14v7M9 18h6"/>
+                    </svg>
+                  </span>
+                  <span class="gender-card-text">
+                    <strong>Female</strong>
+                    <small>Women’s / mixed</small>
+                  </span>
+                </span>
+              </label>
+            </div>
           </fieldset>
-          <button type="submit" class="add-btn" aria-label="Add player">Add</button>
+
+          <button type="submit" class="add-btn" aria-label="Add player">Add player</button>
         </form>
 
         <ul class="player-list" id="playerList" aria-live="polite"></ul>
-        <p class="empty-hint" id="playersEmpty">No one here yet. Add arrivals above and mark each M or F.</p>
+        <p class="empty-hint" id="playersEmpty">No one here yet. Add arrivals above and choose Male or Female.</p>
       </section>
 
       <section class="section games-section" aria-labelledby="gamesHeading">
@@ -144,7 +174,7 @@
 
   <!-- Match preview sheet -->
   <dialog class="sheet" id="matchSheet">
-    <div class="sheet-inner">
+    <div class="sheet-inner match-sheet-inner">
       <header class="sheet-head">
         <h2>Next doubles</h2>
         <button type="button" class="icon-btn" id="closeMatchSheet" aria-label="Close">
@@ -153,21 +183,38 @@
           </svg>
         </button>
       </header>
+
+      <div class="mode-switch" role="tablist" aria-label="How to choose players">
+        <button type="button" class="mode-btn is-active" id="modeSuggestedBtn" data-mode="suggested" role="tab" aria-selected="true">Suggested</button>
+        <button type="button" class="mode-btn" id="modeManualBtn" data-mode="manual" role="tab" aria-selected="false">Pick players</button>
+      </div>
+
       <p class="match-intro" id="matchIntro">Fair mix based on games played and who has already partnered.</p>
-      <label class="field">
-        <span>Match type</span>
-        <select id="matchTypeSelect">
-          <option value="auto">Auto (best available)</option>
-          <option value="mixed">Mixed (2 male · 2 female)</option>
-          <option value="mens">Men's doubles</option>
-          <option value="womens">Women's doubles</option>
-        </select>
-      </label>
+
+      <div id="suggestedControls">
+        <label class="field">
+          <span>Match type</span>
+          <select id="matchTypeSelect">
+            <option value="auto">Auto (best available)</option>
+            <option value="mixed">Mixed (2 male · 2 female)</option>
+            <option value="mens">Men's doubles</option>
+            <option value="womens">Women's doubles</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="manualControls" hidden>
+        <p class="manual-hint" id="manualHint">Select exactly 4 waiting players for a valid mixed or same-gender match.</p>
+        <div class="manual-pick-list" id="manualPickList"></div>
+      </div>
+
       <div class="match-preview" id="matchPreview"></div>
+
       <label class="field">
         <span>Court</span>
         <select id="matchCourtSelect"></select>
       </label>
+
       <div class="sheet-actions">
         <button type="button" class="ghost-btn" id="reshuffleBtn">Reshuffle</button>
         <button type="button" class="primary-btn" id="confirmMatchBtn">Start on court</button>
@@ -179,5 +226,12 @@
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
 
   <script type="module" src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>
